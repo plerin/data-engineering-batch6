@@ -15,14 +15,12 @@ sudo apt-get install -y python3-pip
 
 ```
 sudo apt-get install -y postgresql-server-dev-all
-sudo apt-get install -y postgresql-common
 sudo apt-get install -y libmysqlclient-dev
 sudo pip3 install numpy
 sudo pip3 install pandas
-sudo pip3 install apache-airflow
+sudo pip3 install apache-airflow==2.1.4
 sudo pip3 install apache-airflow-providers-postgres[amazon]
 sudo pip3 install apache-airflow-providers-mysql[amazon]
-sudo pip3 install cryptography psycopg2-binary boto3 botocore
 sudo pip3 install SQLAlchemy==1.3.23
 ```
 
@@ -185,7 +183,13 @@ sudo systemctl status airflow-scheduler
 이는 airflow계정에서 실행되어야 한다. password의 값을 적당히 다른 값으로 바꾼다
 
 ```
-AIRFLOW_HOME=/var/lib/airflow airflow users  create --role Admin --username admin --email admin --firstname admin --lastname admin --password admin
+AIRFLOW_HOME=/var/lib/airflow airflow users  create --role Admin --username admin --email admin --firstname admin --lastname admin --password admin1234
+```
+
+만일 실수로 위의 명령을 ubuntu 어카운트에서 실행했다면 admin 계정을 먼저 지워야한다. 지울 때 아래 명령을 사용한다
+
+```
+AIRFLOW_HOME=/var/lib/airflow airflow users delete --username admin
 ```
 
 그리고나서 본인 서버를 웹브라우저에서 포트번호 8080을 이용해 접근해보면 아래와 같은 로그인 화면이 실행되어야 한다. 예를 들어 본인 EC2 서버의 호스트 이름이 ec2-xxxx.us-west-2.compute.amazonaws.com이라면 https://ec2-xxxx.us-west-2.compute.amazonaws.com:8080/을 웹브라우저에서 방문해본다.
@@ -193,16 +197,16 @@ AIRFLOW_HOME=/var/lib/airflow airflow users  create --role Admin --username admi
 
 ## 이 Github repo를 클론해서 dags 폴더에 있는 DAG들을 /var/lib/airflow/dags로 복사
 
-keeyong/data-engineering-batch5 repository에 있는 dags 폴더의 내용을 /var/lib/airflow/dags로 복사한다. 
+keeyong/data-engineering-batch6 repository에 있는 dags 폴더의 내용을 /var/lib/airflow/dags로 복사한다. 
 
 ```
 sudo su airflow
-cd ~/dags
-git clone https://github.com/keeyong/data-engineering-batch5.git
-cp -r data-engineering-batch5/dags/* dags
+cd ~/
+git clone https://github.com/keeyong/data-engineering-batch6.git
+cp -r data-engineering-batch6/dags/* dags
 ```
 
-그리고나서 Airflow 웹서버를 다시 방문해보면 DAG들이 몇개 보이고 일부 에러도 몇개 보일 것이다. 이 에러들은 나중에 하나씩 해결한다.
+그리고나서 Airflow 웹서버를 다시 방문해보면 (이 설치 작업을 한 시점에 따라) DAG들이 몇개 보이고 일부 에러도 몇개 보일 수 있다. 이 에러들은 나중에 하나씩 해결한다.
 
 단 여기서 복사한 DAG들이 웹 서버에 나타나는데 시간이 좀 걸릴 수 있는데 그 이유는 Airflow가 기본적으로 5분 마다 한번씩 dags 폴더를 뒤져서 새로운 DAG이 있는지 보기 때문이다. 이 변수는 dag_dir_list_interval으로 airflow.cfg에서 확인할 수 있으며 기본값은 300초 (5분)이다. 
 
