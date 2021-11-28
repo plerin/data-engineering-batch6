@@ -22,6 +22,7 @@ sudo pip3 install apache-airflow==2.1.4
 sudo pip3 install apache-airflow-providers-postgres[amazon]
 sudo pip3 install apache-airflow-providers-mysql[amazon]
 sudo pip3 install SQLAlchemy==1.3.23
+sudo pip3 install typing_extensions
 ```
 
 ## airflow:airflow 계정 생성
