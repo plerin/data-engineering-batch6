@@ -60,7 +60,7 @@ CREATE TABLE keeyong.weather_forecast (
 
 dag = DAG(
     dag_id = 'Weather_to_Redshift',
-    start_date = datetime(2021,9,3), # 날짜가 미래인 경우 실행이 안됨
+    start_date = datetime(2021,12,3), # 날짜가 미래인 경우 실행이 안됨
     schedule_interval = '0 2 * * *',  # 적당히 조절
     max_active_runs = 1,
     catchup = False,
