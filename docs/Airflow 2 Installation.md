@@ -193,7 +193,7 @@ AIRFLOW_HOME=/var/lib/airflow airflow users  create --role Admin --username admi
 AIRFLOW_HOME=/var/lib/airflow airflow users delete --username admin
 ```
 
-그리고나서 본인 서버를 웹브라우저에서 포트번호 8080을 이용해 접근해보면 아래와 같은 로그인 화면이 실행되어야 한다. 예를 들어 본인 EC2 서버의 호스트 이름이 ec2-xxxx.us-west-2.compute.amazonaws.com이라면 https://ec2-xxxx.us-west-2.compute.amazonaws.com:8080/을 웹브라우저에서 방문해본다.
+그리고나서 본인 서버를 웹브라우저에서 포트번호 8080을 이용해 접근해보면 아래와 같은 로그인 화면이 실행되어야 한다. 예를 들어 본인 EC2 서버의 호스트 이름이 ec2-xxxx.us-west-2.compute.amazonaws.com이라면 http://ec2-xxxx.us-west-2.compute.amazonaws.com:8080/을 웹브라우저에서 방문해본다. 기본적으로 Airflow 연결은 https (SSL)이 아닌데 이를 변경하고 싶다면 https://airflow.apache.org/docs/apache-airflow/1.10.1/security.html?highlight=celery#ssl 참고.
 
 
 ## 이 Github repo를 클론해서 dags 폴더에 있는 DAG들을 /var/lib/airflow/dags로 복사
