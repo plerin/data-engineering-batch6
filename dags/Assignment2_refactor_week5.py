@@ -114,7 +114,7 @@ def load(**context):
 
 
 with DAG(
-    dag_id = 'assignment2_week5',
+    dag_id = 'assignment2_refactor_week5',
     start_date = datetime(2021, 12, 5),
     catchup = False,
     schedule_interval = '0 0 * * *',
