@@ -12,11 +12,7 @@ import json
 
 API_URL = "https://api.openweathermap.org/data/2.5/onecall?lat={lat}&lon={lon}&exclude={exclude}&appid={api_key}&units=metric"
 API_KEY = Variable.get("open_weather_api_key")
-COORD = {
-            'lat' : 37.551254, 
-            'lon' : 126.988409
-        }
-EXCLUDE = 'current,minutely,hourly'
+
 
 def get_Redshift_connection():
     hook = PostgresHook(postgres_conn_id='redshift_dev_db')
@@ -25,11 +21,15 @@ def get_Redshift_connection():
 def extract(**context):
     logging.info('[START EXTRACT]')
     
+    lat = context["params"]["lat"]
+    lon = context["params"]["lon"]
+    exclude = context["params"]["exclude"]
+
     data = requests.get(
         API_URL.format(
-            lat = COORD["lat"], 
-            lon = COORD["lon"], 
-            exclude = EXCLUDE, 
+            lat = lat, 
+            lon = lat, 
+            exclude = exclude, 
             api_key = API_KEY
         )
     )
@@ -53,12 +53,7 @@ def transform(**context):
         if day == '':
             continue
         col_date = datetime.fromtimestamp(day["dt"]).strftime('%Y-%m-%d')
-        col_temp = float(day["temp"]["day"])
-        col_temp_min = float(day["temp"]["min"])
-        col_temp_max = float(day["temp"]["max"])
-        day_info = [col_date,col_temp,col_temp_min,col_temp_max]
-        
-        weather_info.append(day_info)
+        weather_info.append("('{}', {}, {}, {})".format(col_date, day["temp"]["day"], day["temp"]["min"], day["temp"]["max"]))
         
     logging.info('[END TRANSFORM]')
     return (weather_info)
@@ -76,27 +71,50 @@ def load(**context):
     weather_info = context["task_instance"].xcom_pull(key="return_value", task_ids="transform")
     
     cur = get_Redshift_connection()
-    sql = ''
-    
-    for day in weather_info:
-        (col_date, col_temp, col_temp_min, col_temp_max) = day
-        sql += f"INSERT INTO {schema}.temp_{table} VALUES ('{col_date}', {col_temp}, {col_temp_min}, {col_temp_max}, '{datetime.now()}');"
-    
-    sql += "BEGIN; DELETE FROM {schema}.{table};".format(schema=schema, table=table)
-    sql += f"""
-        INSERT INTO {schema}.{table}
-        SELECT date, temp, min_temp, max_temp, created_date
-        FROM (SELECT *, ROW_NUMBER() OVER (PARTITION BY date ORDER BY created_date DESC) seq
-            FROM {schema}.temp_{table}) WHERE seq = 1;
-        END;
-    """
-    cur.execute(sql)
-    logging.info(sql)
+
+    create_sql = f"""DROP TABLE IF EXISTS {schema}.temp_{table};
+    CREATE TABLE {schema}.temp_{table} (LIKE {schema}.{table} INCLUDING DEFAULTS); INSERT INTO {schema}.temp_{table} SELECT * FROM {schema}.{table};"""
+    logging.info(create_sql)
+
+    try:
+        cur.execute(create_sql)
+        cur.execute("COMMIT;")
+    except Exception as e:
+        cur.execute("ROLLBACK;")
+        raise
+
+    insert_sql = f"INSERT INTO {schema}.temp_{table} VALUES " + ",".join(weather_info)
+    logging.info(insert_sql)
+
+    try:
+        cur.execute(insert_sql)
+        cur.execute("COMMIT;")
+    except Exception as e:
+        cur.execute("ROLLBACK;")
+        raise
+
+    # 기존 테이블 대체
+    alter_sql = f"""DELETE FROM {schema}.{table};
+    INSERT INTO {schema}.{table}
+    SELECT date, temp, min_temp, max_temp FROM (
+        SELECT *, ROW_NUMBER() OVER (PARTITION BY date ORDER BY created_date DESC) seq
+        FROM {schema}.temp_{table}
+    )
+    WHERE seq = 1;"""
+    logging.info(alter_sql)
+
+    try:
+        cur.execute(alter_sql)
+        cur.execute("COMMIT;")
+    except:
+        cur.execute("ROLLBACK;")
+        raise
+
     logging.info('[END LOAD]')
 
 
 with DAG(
-    dag_id = 'assignment2_week5',
+    dag_id = 'assignment2_refactor_week5',
     start_date = datetime(2021, 12, 5),
     catchup = False,
     schedule_interval = '0 0 * * *',
@@ -110,6 +128,12 @@ with DAG(
 
     extract = PythonOperator(
         task_id = 'extract',
+        params = {
+            'lat' : 37.551254,
+            'lon' : 126.988409,
+            'exclude' : 'current,minutely,hourly,alerts'
+        },
+        provide_context = True,
         python_callable = extract
     )
 
