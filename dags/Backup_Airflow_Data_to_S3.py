@@ -22,7 +22,7 @@ This is a job to copy the content of a local PostgreSQL database to S3
 
 
 def main(**context):
-    s3_bucket = Variable.get("data_s3_bucket")
+    s3_bucket = Variable.get("data_s3_bucket")  # 백업 데이터가 저장될 S3 버켓을 
     folder = 'airflow_backup'
 
     # for now dbname can be airflow or superset
